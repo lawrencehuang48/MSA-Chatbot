@@ -1,5 +1,6 @@
 var builder = require('botbuilder');
-
+//FavouriteFoods = JS file
+var food = require('./FavouriteFoods');
 
 exports.startDialog = function (bot) {
 
@@ -63,23 +64,28 @@ exports.startDialog = function (bot) {
         matches: 'GetCalories'
     });
 
-    bot.dialog('GetFavouriteFood', function (session,args) {
-       // Insert favourite food logic here later
-       if (!isAttachment(session)) {
-        
-            // Pulls out the food entity from the session if it exists
-            var foodEntity = builder.EntityRecognizer.findEntity(args.intent.entities, 'food');
-        
-            // Checks if the for entity was found
-            if (foodEntity) {
-                session.send('Retrieving favourite %s...', foodEntity.entity);
-                // Insert logic here later
-        
+    bot.dialog('GetFavouriteFood', [
+        function (session, args, next) {
+            session.dialogData.args = args || {};        
+            if (!session.conversationData["username"]) {
+                builder.Prompts.text(session, "Enter a username to setup your account.");                
             } else {
-                session.send("No food identified! Please try again");
+                next(); // Skip if we already have this info.
+            }
+        },
+        function (session, results, next) {
+            if (!isAttachment(session)) {
+
+                if (results.response) {
+                    session.conversationData["username"] = results.response;
+                }
+
+                session.send("Retrieving your favourite foods");
+                food.displayFavouriteFood(session, session.conversationData["username"]);  // <---- THIS LINE HERE IS WHAT WE NEED 
             }
         }
-    }).triggerAction({
+
+    ]).triggerAction({
         matches: 'GetFavouriteFood'
     });
 
