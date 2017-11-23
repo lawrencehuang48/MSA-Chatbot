@@ -1,6 +1,8 @@
 var builder = require('botbuilder');
 //FavouriteFoods = JS file
 var food = require('./FavouriteFoods');
+var restaurant = require('./RestaurantCard');
+var nutrition = require('./NutritionCard');
 
 exports.startDialog = function (bot) {
 
@@ -16,7 +18,7 @@ exports.startDialog = function (bot) {
             // Checks if the food entity was found
             if (foodEntity) {
                 session.send('Looking for restaurants which sell %s...', foodEntity.entity);
-                // Insert logic here later
+                restaurant.displayRestaurantCards(foodEntity.entity, "auckland", session);
             } else {
                 session.send("No food identified! Please try again");
             }
@@ -26,23 +28,37 @@ exports.startDialog = function (bot) {
         matches: 'WantFood'
     });
 
-    bot.dialog('DeleteFavourite', function (session, args) { 
-        // Insert delete logic here later
-        if (!isAttachment(session)) {
-            // Pulls out the food entity from the session if it exists
-            var foodEntity = builder.EntityRecognizer.findEntity(args.intent.entities, 'food');
+    bot.dialog('DeleteFavourite', [
+        function (session, args, next) {
+            session.dialogData.args = args || {};
+            if (!session.conversationData["username"]) {
+                builder.Prompts.text(session, "Enter a username to setup your account.");
+            } else {
+                next(); // Skip if we already have this info.
+            }
+        },
+        function (session, results,next) {
+        if (!isAttachment(session)) {    
+            //Add this code in otherwise your username will not work.
+            if (results.response) {
+                session.conversationData["username"] = results.response;
+            }
 
-            // Checks if the food entity was found
+            session.send("You want to delete one of your favourite foods.");
+
+            // Pulls out the food entity from the session if it exists
+            var foodEntity = builder.EntityRecognizer.findEntity(session.dialogData.args.intent.entities, 'food');
+
+            // Checks if the for entity was found
             if (foodEntity) {
-                session.send('Deleting %s...', foodEntity.entity);
-                // Insert logic here later
+                session.send('Deleting \'%s\'...', foodEntity.entity);
+                food.deleteFavouriteFood(session,session.conversationData['username'],foodEntity.entity); //<--- CALLL WE WANT
             } else {
                 session.send("No food identified! Please try again");
             }
         }
-    }).triggerAction({
+    }]).triggerAction({
         matches: 'DeleteFavourite'
-
     });
 
     bot.dialog('GetCalories', function (session, args) {
@@ -54,7 +70,7 @@ exports.startDialog = function (bot) {
             // Checks if the for entity was found
             if (foodEntity) {
                 session.send('Calculating calories in %s...', foodEntity.entity);
-                // Insert logic here later
+                nutrition.displayNutritionCards(foodEntity.entity, session); //sends nutrition card
 
             } else {
                 session.send("No food identified! Please try again");
@@ -74,23 +90,49 @@ exports.startDialog = function (bot) {
             }
         },
         function (session, results, next) {
-            if (!isAttachment(session)) {
-
-                if (results.response) {
-                    session.conversationData["username"] = results.response;
-                }
-
-                session.send("Retrieving your favourite foods");
-                food.displayFavouriteFood(session, session.conversationData["username"]);  // <---- THIS LINE HERE IS WHAT WE NEED 
+        if (!isAttachment(session)) {
+            if (results.response) {
+                session.conversationData["username"] = results.response;
             }
+
+            session.send("Retrieving your favourite foods");
+            food.displayFavouriteFood(session, session.conversationData["username"]);  // <---- THIS LINE HERE IS WHAT WE NEED 
         }
+    }
 
     ]).triggerAction({
         matches: 'GetFavouriteFood'
     });
 
     bot.dialog('LookForFavourite', [
-        // Insert logic here later
+        function (session, args, next) {
+            session.dialogData.args = args || {};        
+            if (!session.conversationData["username"]) { //Check if conversation has username
+                builder.Prompts.text(session, "Enter a username to setup your account.");                
+            } else {
+                next(); // Skip if we already have this info.
+            }
+        },
+        function (session, results, next) {
+            if (!isAttachment(session)) {
+    
+                    if (results.response) {
+                        session.conversationData["username"] = results.response;
+                    }
+                    // Pulls out the food entity from the session if it exists
+                    var foodEntity = builder.EntityRecognizer.findEntity(session.dialogData.args.intent.entities, 'food');
+        
+                    // Checks if the food entity was found
+                    if (foodEntity) {
+                        session.send('Thanks for telling me that \'%s\' is your favourite food', foodEntity.entity);
+                        food.sendFavouriteFood(session, session.conversationData["username"], foodEntity.entity); // <-- LINE WE WANT
+        
+                    } else {
+                        session.send("No food identified!!!");
+                    }
+                }
+            }
+      
     ]).triggerAction({
         matches: 'LookForFavourite'
     });
@@ -108,7 +150,8 @@ function isAttachment(session) {
     var msg = session.message.text;
     if ((session.message.attachments && session.message.attachments.length > 0) || msg.includes("http")) {
         
-        //call custom vision here later
+        //call custom vision
+        customVision.retreiveMessage(session);
         return true;
     }
     else {
