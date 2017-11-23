@@ -3,6 +3,7 @@ var builder = require('botbuilder');
 var food = require('./FavouriteFoods');
 var restaurant = require('./RestaurantCard');
 var nutrition = require('./NutritionCard');
+var customVision = require('./CustomVision');
 
 exports.startDialog = function (bot) {
 
@@ -90,15 +91,15 @@ exports.startDialog = function (bot) {
             }
         },
         function (session, results, next) {
-        if (!isAttachment(session)) {
-            if (results.response) {
-                session.conversationData["username"] = results.response;
-            }
+            if (!isAttachment(session)) {
+                if (results.response) {
+                    session.conversationData["username"] = results.response;
+                }
 
-            session.send("Retrieving your favourite foods");
-            food.displayFavouriteFood(session, session.conversationData["username"]);  // <---- THIS LINE HERE IS WHAT WE NEED 
+                session.send("Retrieving your favourite foods");
+                food.displayFavouriteFood(session, session.conversationData["username"]);  // <---- THIS LINE HERE IS WHAT WE NEED 
+            }
         }
-    }
 
     ]).triggerAction({
         matches: 'GetFavouriteFood'
@@ -139,7 +140,6 @@ exports.startDialog = function (bot) {
     
 
     bot.dialog('WelcomeIntent', [
-        // Insert logic here later
     ]).triggerAction({
         matches: 'WelcomeIntent'
     });
