@@ -4,6 +4,7 @@ var food = require('./FavouriteFoods');
 var restaurant = require('./RestaurantCard');
 var nutrition = require('./NutritionCard');
 var customVision = require('./CustomVision');
+var qna = require('./QnAMaker');
 
 exports.startDialog = function (bot) {
 
@@ -142,6 +143,18 @@ exports.startDialog = function (bot) {
     bot.dialog('WelcomeIntent', [
     ]).triggerAction({
         matches: 'WelcomeIntent'
+    });
+
+    bot.dialog('QnA', [
+        function (session, args, next) {
+            session.dialogData.args = args || {};
+            builder.Prompts.text(session, "What is your question?");
+        },
+        function (session, results, next) {
+            qna.talkToQnA(session, results.response);
+        }
+    ]).triggerAction({
+        matches: 'QnA'
     });
 }
 

@@ -80,3 +80,26 @@ exports.getNutritionData = function getData(url, session, foodName, callback){ /
             }
         });
     };
+
+    exports.postQnAResults = function getData(url, session, question, callback){
+        var options = {
+            url: url,
+            method: 'POST',
+            headers: {
+                'Ocp-Apim-Subscription-Key': '873c58c71cab41169aef00cb0ed5d094',
+                'Content-Type':'application/json'
+            },
+            json: {
+                "question" : question
+            }
+          };
+      
+          request(options, function (error, response, body) {
+            if (!error && response.statusCode === 200) {
+                callback(body, session, question);
+            }
+            else{
+                console.log(error);
+            }
+          });
+      };
